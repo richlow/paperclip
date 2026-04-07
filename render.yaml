@@ -1,0 +1,53 @@
+# Render Blueprint — Paperclip control plane (API + static board UI)
+# https://render.com/docs/blueprint-spec
+#
+# After first deploy:
+# - If you add a custom domain, set PAPERCLIP_PUBLIC_URL (and optional BETTER_AUTH_TRUSTED_ORIGINS) in the dashboard to match your public HTTPS URL.
+# - Without a custom domain, startCommand falls back to RENDER_EXTERNAL_URL for auth base URL.
+#
+# Secrets: BETTER_AUTH_SECRET is generated here. Rotate or replace in the dashboard if needed.
+#
+# Plans below are paid Render tiers (not free). Bump web `plan` (e.g. pro) or DB `plan` (e.g. pro-4gb) in the dashboard as load grows.
+
+databases:
+  - name: paperclip-db
+    databaseName: paperclip
+    user: paperclip
+    plan: basic-1gb
+
+services:
+  - type: web
+    name: paperclip
+    runtime: node
+    plan: standard
+    region: oregon
+    buildCommand: |
+      corepack enable && corepack prepare pnpm@9.15.4 --activate
+      pnpm install --frozen-lockfile
+      pnpm -r build
+      bash scripts/prepare-server-ui-dist.sh
+    preDeployCommand: |
+      corepack enable && corepack prepare pnpm@9.15.4 --activate
+      pnpm db:migrate
+    startCommand: |
+      cd server && PAPERCLIP_PUBLIC_URL="${PAPERCLIP_PUBLIC_URL:-$RENDER_EXTERNAL_URL}" node dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: PAPERCLIP_DEPLOYMENT_MODE
+        value: authenticated
+      - key: PAPERCLIP_DEPLOYMENT_EXPOSURE
+        value: public
+      - key: SERVE_UI
+        value: "true"
+      - key: PAPERCLIP_UI_DEV_MIDDLEWARE
+        value: "false"
+      - key: BETTER_AUTH_SECRET
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        value: placeholder
+      - key: DATABASE_URL
+        fromDatabase:
+          name: paperclip-db
+          property: connectionString
