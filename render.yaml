@@ -24,11 +24,14 @@ services:
     buildCommand: |
       corepack enable && corepack prepare pnpm@9.15.4 --activate
       pnpm install --frozen-lockfile
+      # claude_local adapter shells out to the Claude Code CLI (same as Dockerfile production stage)
+      npm install -g @anthropic-ai/claude-code@latest --prefix "$(pwd)/.npm-global"
       pnpm -r build
       bash scripts/prepare-server-ui-dist.sh
     # Avoid `corepack enable` here — Render pre-deploy often cannot modify /usr/bin/pnpm (EACCES).
     preDeployCommand: pnpm db:migrate
     startCommand: |
+      export PATH="$PWD/.npm-global/bin:$PATH"
       cd server && PAPERCLIP_PUBLIC_URL="${PAPERCLIP_PUBLIC_URL:-$RENDER_EXTERNAL_URL}" node dist/index.js
     healthCheckPath: /api/health
     envVars:

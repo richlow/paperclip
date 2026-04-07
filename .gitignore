@@ -1,4 +1,5 @@
 node_modules/
+.npm-global/
 dist/
 .env
 *.tsbuildinfo
