@@ -26,9 +26,8 @@ services:
       pnpm install --frozen-lockfile
       pnpm -r build
       bash scripts/prepare-server-ui-dist.sh
-    preDeployCommand: |
-      corepack enable && corepack prepare pnpm@9.15.4 --activate
-      pnpm db:migrate
+    # Avoid `corepack enable` here — Render pre-deploy often cannot modify /usr/bin/pnpm (EACCES).
+    preDeployCommand: pnpm db:migrate
     startCommand: |
       cd server && PAPERCLIP_PUBLIC_URL="${PAPERCLIP_PUBLIC_URL:-$RENDER_EXTERNAL_URL}" node dist/index.js
     healthCheckPath: /api/health

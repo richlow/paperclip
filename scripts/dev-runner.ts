@@ -103,6 +103,14 @@ if (tailscaleAuth) {
   console.log("[paperclip] dev mode: local_trusted (default)");
 }
 
+// Workspace packages default `exports` to dist for production Node; use `development` for tsx source.
+const devConditionFlag = "--conditions=development";
+env.NODE_OPTIONS = env.NODE_OPTIONS?.includes("conditions=development")
+  ? env.NODE_OPTIONS
+  : env.NODE_OPTIONS?.trim()
+    ? `${devConditionFlag} ${env.NODE_OPTIONS}`
+    : devConditionFlag;
+
 const serverPort = Number.parseInt(env.PORT ?? process.env.PORT ?? "3100", 10) || 3100;
 const devService = createDevServiceIdentity({
   mode,
